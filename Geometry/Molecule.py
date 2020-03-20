@@ -1,69 +1,50 @@
 # coding=utf-8
 from .Atom import Atom
+from .Atoms import Atoms
+from .Bond import Bond
 import re
 
-class Molecule(object):
+class Molecule(Atoms):
     def __init__(self,name="Unnamed",charge=0,multiplicity=1):
+        super().__init__()
         self.name = name
         self.charge = charge
         self.multiplicity = multiplicity
-        self.atoms = []
-        self.links = {}
-        self.hash = {}
+        self.bonds = {}
         self.cache = {}
 
     def addAtom(self,atom):
-        if atom == None:
-            return
-        self.hash[atom.label] = len(self.atoms)
-        self.atoms.append(atom)
+        super().addAtom(atom)
         self.updateMultiplicity()
         self.clearCache()
         return self
 
-    def addlink(self,a,b,value=1):
-        if not a.label in self.links:
-            self.links[a.label] = {}
-        if not b.label in self.links:
-            self.links[b.label] = {}
-        self.links[a.label][b.label] = value
-        self.links[b.label][a.label] = value
+    def addBond(self,a,b,value=1):
+        bond = Bond(a,b,value)
+        if not a.label in self.bonds:
+            self.bonds[a.label] = {}
+        if not b.label in self.bonds:
+            self.bonds[b.label] = {}
+        self.bonds[a.label][b.label] = bond
+        self.bonds[b.label][a.label] = bond
         return self
 
-    def queryAtom(self,label):
-        return self.atoms[self.hash[label]]
-
-    def queryAtomsBySymbol(self,symbol):
-        return list(filter(lambda x:x.symbol==symbol,self.atoms))
-
     def removeAtom(self,atom):
-        for i in range(len(self.atoms)):
-            if self.atoms[i] == atom:
-                self.atoms.pop(i)
-                break
-        self.updateHash()
-        self.updateLink()
+        super().removeAtom(atom)
+        self.updateBond()
         self.clearCache()
         return self
 
     def removeAtomByLabel(self,label):
-        if label in self.hash:
-            self.atoms.pop(self.hash[label])
-        self.updateHash()
-        self.updateLink()
+        super().removeAtomByLabel(label)
+        self.updateBond()
         self.clearCache()
         return self
 
-    def updateHash(self):
-        self.hash.clear()
-        for i in range(len(self.atoms)):
-            self.hash[self.atoms[i].label] = i
-        return self
-
-    def updateLink(self):
-        for (k,v) in self.links.items():
+    def updateBond(self):
+        for (k,v) in self.bonds.items():
             if not k in self.hash:
-                del self.links[k]
+                del self.bonds[k]
             else:
                 for (_k,_v) in v.items():
                     if not _k in self.hash:
@@ -89,41 +70,6 @@ class Molecule(object):
             self.multiplicity = multiplicity
         else:
             raise Exception('multiplicity of %s is impossible!' % multiplicity)
-
-    def translate(self,vector=(0,0,0)):
-        for atom in self.atoms:
-            atom.translate(*vector)
-        return self
-    
-    def rotate(self,axis,angle):
-        for atom in self.atoms:
-            atom.rotate(axis,angle,(0,0,0))
-        return self
-
-    @property
-    def size(self):
-        return len(self.atoms)
-
-    @property
-    def weight(self):
-        if 'weight' in self.cache:
-            return self.cache['weight']
-        weight = 0
-        for atom in self.atoms:
-            weight += atom.weight
-        self.cache['weight'] = weight
-        return weight
-
-    @property
-    def electrons(self):
-        if 'electrons' in self.cache:
-            return self.cache['electrons']
-        electrons = 0
-        for atom in self.atoms:
-            electrons += atom.electrons
-        electrons -= self.charge
-        self.cache['weight'] = electrons
-        return electrons
 
     def string(self,format='xyz'):
         if format == 'xyz':
@@ -168,7 +114,7 @@ class Molecule(object):
             atom.index = i+1
             pdb += atom.string('HETATM{index:>5} {symbol:>2}           0    {x:>-8.3f}{y:>-8.3f}{z:>-8.3f}                      {symbol:>2}\n')
         pdb += 'END\n'
-        for (k,v) in self.links.items():
+        for (k,v) in self.bonds.items():
             pdb += 'CONECT %5d' % self.queryAtom(k).index
             for id in v.keys():
                 pdb += '%5d' % self.queryAtom(id).index

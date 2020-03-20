@@ -1,6 +1,8 @@
-class Fragment(object):
+from .Atoms import Atoms
+
+class Fragment(Atoms):
     def __init__(self):
-        self.atoms = []
+        super().__init__()
         self.bonds = []
         self.activated = None
 

@@ -1,10 +1,14 @@
 # coding=utf-8
+from .Atom import Atom
+
 class Bond(object):
     table = {
     }
-    def __init__(self,type=1,length=1):
+    def __init__(self,atomA,atomB,type=1):
+        self.head = atomA
+        self.tail = atomB
+        self.length = Atom.length(self.head,self.tail)
         self.type = type
-        self.length = length
 
     def getBondType(self):
         return self.type
@@ -13,9 +17,11 @@ class Bond(object):
         self.type = type
         return self
 
-    def getBondLength(self):
-        return self.length
+    def setHeadAtom(self,atom):
+        self.head = atom
+        self.length = Atom.length(self.head,self.tail)
 
-    def setBondLength(self,length):
-        self.length = length
-        return self
+    def setTailAtom(self,atom):
+        self.tail = atom
+        self.length = Atom.length(self.head,self.tail)
+
